@@ -28,6 +28,7 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [firstDate, setFirstDate] = useState<Date | null>();
   const [lastDate, setLastDate] = useState<Date | null>();
+  const [error, setError] = useState(false);
 
   dayjs.locale('fr');
 
@@ -44,6 +45,7 @@ function Home() {
       return;
     }
     setLoading(true);
+    setError(false);
     fetch(
       `/api/list?firstDate=${firstDate.toISOString().split('T')[0]}&lastDate=${
         lastDate.toISOString().split('T')[0]
@@ -53,6 +55,10 @@ function Home() {
       .then((data: ShoppingList) => {
         setShoppingList(data);
         setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+        setError(true);
       });
   }, [firstDate, lastDate]);
   return (
@@ -99,6 +105,11 @@ function Home() {
         <div className={styles.description}>
           {loading ? (
             <CircularProgress />
+          ) : error ? (
+            <div>
+              Something went wrong, your request is probably too heavy for the
+              server
+            </div>
           ) : (
             <TableContainer component={Paper}>
               <Table sx={{ maxWidth: '100%' }} aria-label="shopping list">
@@ -132,19 +143,6 @@ function Home() {
           )}
         </div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
   );
 }

@@ -16,12 +16,18 @@ a {
   box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-  body {
-    color: white;
-    background: black;
-  }
+body {
+    background: var(--color-grey-light);
+}
+
+:root{
+  --color-primary: #80cbc4;
+  --color-primary-light: #b2fef7;
+  --color-primary-dark: #4f9a94;
+  --color-secondary: #ffcdd2;
+  --color-secondary-light: #ffffff;
+  --color-secondary-dark: #cb9ca1;
+  --color-grey: #E1E2E1;
+  --color-grey-light: #F5F5F5;
+  ;
 }
