@@ -1,9 +1,4 @@
-import { Client, isFullPage, iteratePaginatedAPI } from '@notionhq/client';
-import {
-  isNumberPropertyItemObjectResponse,
-  isPropertyItemListResponse,
-  isRelationPropertyItemObjectResponse,
-} from '../../helpers/typeGuards';
+import { Client, isFullPage } from '@notionhq/client';
 import queryAllPaginatedAPI from '../../helpers/queryAllPaginatedAPI';
 import { GetPageResponse } from '@notionhq/client/build/src/api-endpoints';
 import { ShoppingList } from '../../types';
