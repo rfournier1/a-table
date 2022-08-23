@@ -1,19 +1,13 @@
-import { Client, isFullPage, iteratePaginatedAPI } from '@notionhq/client';
-import {
-  isNumberPropertyItemObjectResponse,
-  isPropertyItemListResponse,
-  isRelationPropertyItemObjectResponse,
-  isRichTextPropertyItemObjectResponse,
-  isSelectPropertyItemObjectResponse,
-  isTitlePropertyItemObjectResponse,
-} from '../../helpers/typeGuards';
+import { Client, isFullPage } from '@notionhq/client';
 import queryAllPaginatedAPI from '../../helpers/queryAllPaginatedAPI';
 import { GetPageResponse } from '@notionhq/client/build/src/api-endpoints';
 import { ShoppingList } from '../../types';
+import { hasProperty } from '../../helpers/typeGuards';
 
-// Initializing a client
-const notion = new Client({
+//v1 of the api return the properties values in database query whereas v2 does not
+const notionv1Client = new Client({
   auth: process.env.NOTION_ITEGRATION_TOKEN,
+  notionVersion: '2022-02-22',
 });
 
 interface getShoppingListFromMealsProps {
@@ -45,7 +39,7 @@ export const getShoppingListFromMeals = async ({
   }
 
   //TO DO: handle pagination as max limit per page is 100
-  const meals = await notion.databases.query({
+  const meals = await notionv1Client.databases.query({
     database_id: mealDatabaseId,
     filter: {
       and: [
@@ -68,7 +62,7 @@ export const getShoppingListFromMeals = async ({
   const reciepes: Record<string, GetPageResponse> = Object.assign(
     {},
     ...(
-      await queryAllPaginatedAPI(notion.databases.query, {
+      await queryAllPaginatedAPI(notionv1Client.databases.query, {
         database_id: reciepeDatabaseId,
       })
     ).map((reciepe) => ({ [reciepe.id]: reciepe }))
@@ -78,7 +72,7 @@ export const getShoppingListFromMeals = async ({
     Object.assign(
       {},
       ...(
-        await queryAllPaginatedAPI(notion.databases.query, {
+        await queryAllPaginatedAPI(notionv1Client.databases.query, {
           database_id: reciepeIngredientsRelationDatabaseId,
         })
       ).map((reciepeIngredientsRelation) => ({
@@ -89,131 +83,94 @@ export const getShoppingListFromMeals = async ({
   const ingredients: Record<string, GetPageResponse> = Object.assign(
     {},
     ...(
-      await queryAllPaginatedAPI(notion.databases.query, {
+      await queryAllPaginatedAPI(notionv1Client.databases.query, {
         database_id: ingredientsDatabaseId,
       })
     ).map((ingredient) => ({ [ingredient.id]: ingredient }))
   );
 
-  const mealsDatabase = await notion.databases.retrieve({
-    database_id: mealDatabaseId,
-  });
-  const mealToReciepeRelationPropertyId = mealsDatabase.properties['Plat'].id;
-  const mealToAttendingPersonsRelationPropertyId =
-    mealsDatabase.properties['Qui est présent ?'].id;
-  const reciepeDatabase = await notion.databases.retrieve({
-    database_id: reciepeDatabaseId,
-  });
-  const reciepeToReciepeIngredientsRelationRelationPropertyId =
-    reciepeDatabase.properties['Id Ingredients'].id;
-  const reciepeIngredientsRelationDatabase = await notion.databases.retrieve({
-    database_id: reciepeIngredientsRelationDatabaseId,
-  });
-
-  const reciepeIngredientQuantityPropertyId =
-    reciepeIngredientsRelationDatabase.properties['Quantité'].id;
-  const reciepeIngredientToIngredientRelationPropertyId =
-    reciepeIngredientsRelationDatabase.properties['Ingredient'].id;
-
-  const ingredientsDatabase = await notion.databases.retrieve({
-    database_id: ingredientsDatabaseId,
-  });
-  const ingredientTitlePropertyId = ingredientsDatabase.properties['Nom'].id;
-  const ingredientUnitPropertyId = ingredientsDatabase.properties['Unité'].id;
-
   //TO DO: exctract each relation logic into separate functions
   const ingredientsQuantities: Record<string, number> = {};
   for (let meal of meals.results) {
     if (isFullPage(meal)) {
-      const mealAttendingPersons = await notion.pages.properties.retrieve({
-        page_id: meal.id,
-        property_id: mealToAttendingPersonsRelationPropertyId,
-      });
+      const attendingPeopleProperty = meal.properties['Qui est présent ?'];
       if (
-        isPropertyItemListResponse(mealAttendingPersons) &&
-        mealAttendingPersons.results.length > 0
+        hasProperty(attendingPeopleProperty, 'people') &&
+        Array.isArray(attendingPeopleProperty.people) &&
+        attendingPeopleProperty.people.length > 0
       ) {
-        const numberOfAttendingPersons = mealAttendingPersons.results.length;
-        const mealReciepesRelations = await notion.pages.properties.retrieve({
-          page_id: meal.id,
-          property_id: mealToReciepeRelationPropertyId,
-        });
-        console.log('meal');
-        if (isPropertyItemListResponse(mealReciepesRelations)) {
-          const mealReciepes = mealReciepesRelations.results.map(
+        const numberOfAttendingPersons = attendingPeopleProperty.people.length;
+
+        const mealReciepesRelationsProperty = meal.properties['Plat'];
+        if (
+          hasProperty(mealReciepesRelationsProperty, 'relation') &&
+          Array.isArray(mealReciepesRelationsProperty.relation)
+        ) {
+          const mealReciepes = mealReciepesRelationsProperty.relation.map(
             (mealReciepeRelation) => {
-              if (!isRelationPropertyItemObjectResponse(mealReciepeRelation)) {
-                return undefined;
-              }
-              return reciepes[mealReciepeRelation.relation.id];
+              return reciepes[mealReciepeRelation.id];
             }
           );
 
           for (let mealReciepe of mealReciepes) {
-            if (mealReciepe !== undefined) {
-              const mealReciepeIngredientsToReciepeRelationsIds =
-                await notion.pages.properties.retrieve({
-                  page_id: mealReciepe.id,
-                  property_id:
-                    reciepeToReciepeIngredientsRelationRelationPropertyId,
-                });
+            if (mealReciepe !== undefined && isFullPage(mealReciepe)) {
+              const mealReciepeIngredientsToReciepeRelationsProperty =
+                mealReciepe.properties['Id Ingredients'];
               if (
-                isPropertyItemListResponse(
-                  mealReciepeIngredientsToReciepeRelationsIds
+                hasProperty(
+                  mealReciepeIngredientsToReciepeRelationsProperty,
+                  'relation'
+                ) &&
+                Array.isArray(
+                  mealReciepeIngredientsToReciepeRelationsProperty.relation
                 )
               ) {
                 const mealReciepeIngredients =
-                  mealReciepeIngredientsToReciepeRelationsIds.results.map(
-                    (mealReciepeIngredientsToReciepeRelationsId) => {
-                      if (
-                        !isRelationPropertyItemObjectResponse(
-                          mealReciepeIngredientsToReciepeRelationsId
-                        )
-                      ) {
-                        return undefined;
-                      }
+                  mealReciepeIngredientsToReciepeRelationsProperty.relation.map(
+                    (mealReciepeIngredientsToReciepeRelations) => {
                       return reciepeIngredientsRelations[
-                        mealReciepeIngredientsToReciepeRelationsId.relation.id
+                        mealReciepeIngredientsToReciepeRelations.id
                       ];
                     }
                   );
                 for (let mealReciepeIngredient of mealReciepeIngredients) {
-                  if (mealReciepeIngredient !== undefined) {
-                    const mealReciepeIngredientQuantity =
-                      await notion.pages.properties.retrieve({
-                        page_id: mealReciepeIngredient.id,
-                        property_id: reciepeIngredientQuantityPropertyId,
-                      });
-                    const mealReciepeIngredientToIngredientRelations =
-                      await notion.pages.properties.retrieve({
-                        page_id: mealReciepeIngredient.id,
-                        property_id:
-                          reciepeIngredientToIngredientRelationPropertyId,
-                      });
+                  if (
+                    mealReciepeIngredient !== undefined &&
+                    isFullPage(mealReciepeIngredient)
+                  ) {
+                    const mealReciepeIngredientQuantityProperty =
+                      mealReciepeIngredient.properties['Quantité'];
                     if (
-                      isPropertyItemListResponse(
-                        mealReciepeIngredientToIngredientRelations
+                      hasProperty(
+                        mealReciepeIngredientQuantityProperty,
+                        'number'
                       )
                     ) {
+                      const mealReciepeIngredientQuantity =
+                        typeof mealReciepeIngredientQuantityProperty.number ===
+                        'number'
+                          ? mealReciepeIngredientQuantityProperty.number
+                          : 0;
+                      const ingredientRelationProperty =
+                        mealReciepeIngredient.properties['Ingredient'];
                       if (
-                        isRelationPropertyItemObjectResponse(
-                          mealReciepeIngredientToIngredientRelations.results[0]
-                        ) &&
-                        isNumberPropertyItemObjectResponse(
-                          mealReciepeIngredientQuantity
-                        )
+                        hasProperty(ingredientRelationProperty, 'relation') &&
+                        Array.isArray(ingredientRelationProperty.relation)
                       ) {
                         const ingredientId =
-                          mealReciepeIngredientToIngredientRelations.results[0]
-                            .relation.id;
-                        if (ingredientsQuantities[ingredientId] === undefined) {
-                          ingredientsQuantities[ingredientId] =
-                            (mealReciepeIngredientQuantity.number ?? 0) *
-                            numberOfAttendingPersons;
-                        } else {
-                          ingredientsQuantities[ingredientId] +=
-                            (mealReciepeIngredientQuantity.number ?? 0) *
-                            numberOfAttendingPersons;
+                          ingredientRelationProperty.relation[0]?.id;
+                        if (ingredientId) {
+                          if (
+                            ingredientsQuantities[ingredientId] === undefined
+                          ) {
+                            ingredientsQuantities[ingredientId] =
+                              mealReciepeIngredientQuantity *
+                              numberOfAttendingPersons;
+                          } else {
+                            ingredientsQuantities[ingredientId] +=
+                              mealReciepeIngredientQuantity *
+                              numberOfAttendingPersons;
+                          }
                         }
                       }
                     }
@@ -229,26 +186,29 @@ export const getShoppingListFromMeals = async ({
 
   return Promise.all(
     Object.keys(ingredientsQuantities).map(async (ingredientId) => {
-      const ingredientName = await notion.pages.properties.retrieve({
-        page_id: ingredientId,
-        property_id: ingredientTitlePropertyId,
-      });
-      const name =
-        isPropertyItemListResponse(ingredientName) &&
-        isTitlePropertyItemObjectResponse(ingredientName.results[0])
-          ? ingredientName.results[0].title.plain_text
-          : '';
-
-      const ingredientUnit = await notion.pages.properties.retrieve({
-        page_id: ingredientId,
-        property_id: ingredientUnitPropertyId,
-      });
-      const unit =
-        isSelectPropertyItemObjectResponse(ingredientUnit) &&
-        ingredientUnit.select !== null
-          ? ingredientUnit.select.name
-          : '';
-
+      let name = '';
+      let unit = '';
+      const ingredient = ingredients[ingredientId];
+      if (isFullPage(ingredient)) {
+        const ingredientNameProperty = ingredient.properties['Nom'];
+        if (
+          hasProperty(ingredientNameProperty, 'title') &&
+          Array.isArray(ingredientNameProperty.title) &&
+          typeof ingredientNameProperty.title[0]?.plain_text === 'string'
+        ) {
+          name = ingredientNameProperty.title[0]?.plain_text ?? '';
+        }
+        const ingredientUnitProperty = ingredient.properties['Unité'];
+        if (hasProperty(ingredientUnitProperty, 'select')) {
+          const ingredientUnitPropertySelect = ingredientUnitProperty.select;
+          if (
+            hasProperty(ingredientUnitPropertySelect, 'name') &&
+            typeof ingredientUnitPropertySelect.name === 'string'
+          ) {
+            unit = ingredientUnitPropertySelect.name ?? '';
+          }
+        }
+      }
       return {
         id: ingredientId,
         name,
