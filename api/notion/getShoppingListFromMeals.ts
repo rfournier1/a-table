@@ -2,6 +2,7 @@ import { Client, isFullPage } from '@notionhq/client';
 import queryAllPaginatedAPI from '../../helpers/queryAllPaginatedAPI';
 import { GetPageResponse } from '@notionhq/client/build/src/api-endpoints';
 import { ShoppingList } from '../../types';
+import { hasProperty } from '../../helpers/typeGuards';
 
 //v1 of the api return the properties values in database query whereas v2 does not
 const notionv1Client = new Client({
@@ -92,50 +93,86 @@ export const getShoppingListFromMeals = async ({
   const ingredientsQuantities: Record<string, number> = {};
   for (let meal of meals.results) {
     if (isFullPage(meal)) {
-      const mealAttendingPersons = meal.properties['Qui est présent ?']?.people;
-      if (mealAttendingPersons && mealAttendingPersons.length > 0) {
-        const numberOfAttendingPersons = mealAttendingPersons.length;
-        const mealReciepesRelations = meal.properties['Plat']?.relation;
-        console.log('meal');
-        if (mealReciepesRelations !== undefined) {
-          const mealReciepes = mealReciepesRelations.map(
+      const attendingPeopleProperty = meal.properties['Qui est présent ?'];
+      if (
+        hasProperty(attendingPeopleProperty, 'people') &&
+        Array.isArray(attendingPeopleProperty.people) &&
+        attendingPeopleProperty.people.length > 0
+      ) {
+        const numberOfAttendingPersons = attendingPeopleProperty.people.length;
+
+        const mealReciepesRelationsProperty = meal.properties['Plat'];
+        if (
+          hasProperty(mealReciepesRelationsProperty, 'relation') &&
+          Array.isArray(mealReciepesRelationsProperty.relation)
+        ) {
+          const mealReciepes = mealReciepesRelationsProperty.relation.map(
             (mealReciepeRelation) => {
               return reciepes[mealReciepeRelation.id];
             }
           );
 
           for (let mealReciepe of mealReciepes) {
-            if (mealReciepe !== undefined) {
-              const mealReciepeIngredientsToReciepeRelationsIds =
-                mealReciepe.properties['Id Ingredients']?.relation;
+            if (mealReciepe !== undefined && isFullPage(mealReciepe)) {
+              const mealReciepeIngredientsToReciepeRelationsProperty =
+                mealReciepe.properties['Id Ingredients'];
               if (
-                mealReciepeIngredientsToReciepeRelationsIds &&
-                mealReciepeIngredientsToReciepeRelationsIds.length > 0
+                hasProperty(
+                  mealReciepeIngredientsToReciepeRelationsProperty,
+                  'relation'
+                ) &&
+                Array.isArray(
+                  mealReciepeIngredientsToReciepeRelationsProperty.relation
+                )
               ) {
                 const mealReciepeIngredients =
-                  mealReciepeIngredientsToReciepeRelationsIds.map(
-                    (mealReciepeIngredientsToReciepeRelationsId) => {
+                  mealReciepeIngredientsToReciepeRelationsProperty.relation.map(
+                    (mealReciepeIngredientsToReciepeRelations) => {
                       return reciepeIngredientsRelations[
-                        mealReciepeIngredientsToReciepeRelationsId.id
+                        mealReciepeIngredientsToReciepeRelations.id
                       ];
                     }
                   );
                 for (let mealReciepeIngredient of mealReciepeIngredients) {
-                  const mealReciepeIngredientQuantity =
-                    mealReciepeIngredient.properties['Quantité']?.number ?? 0;
-
-                  const ingredientId =
-                    mealReciepeIngredient.properties['Ingredient']?.relation[0]
-                      ?.id;
-                  if (ingredientId) {
-                    if (ingredientsQuantities[ingredientId] === undefined) {
-                      ingredientsQuantities[ingredientId] =
-                        mealReciepeIngredientQuantity *
-                        numberOfAttendingPersons;
-                    } else {
-                      ingredientsQuantities[ingredientId] +=
-                        mealReciepeIngredientQuantity *
-                        numberOfAttendingPersons;
+                  if (
+                    mealReciepeIngredient !== undefined &&
+                    isFullPage(mealReciepeIngredient)
+                  ) {
+                    const mealReciepeIngredientQuantityProperty =
+                      mealReciepeIngredient.properties['Quantité'];
+                    if (
+                      hasProperty(
+                        mealReciepeIngredientQuantityProperty,
+                        'number'
+                      )
+                    ) {
+                      const mealReciepeIngredientQuantity =
+                        typeof mealReciepeIngredientQuantityProperty.number ===
+                        'number'
+                          ? mealReciepeIngredientQuantityProperty.number
+                          : 0;
+                      const ingredientRelationProperty =
+                        mealReciepeIngredient.properties['Ingredient'];
+                      if (
+                        hasProperty(ingredientRelationProperty, 'relation') &&
+                        Array.isArray(ingredientRelationProperty.relation)
+                      ) {
+                        const ingredientId =
+                          ingredientRelationProperty.relation[0]?.id;
+                        if (ingredientId) {
+                          if (
+                            ingredientsQuantities[ingredientId] === undefined
+                          ) {
+                            ingredientsQuantities[ingredientId] =
+                              mealReciepeIngredientQuantity *
+                              numberOfAttendingPersons;
+                          } else {
+                            ingredientsQuantities[ingredientId] +=
+                              mealReciepeIngredientQuantity *
+                              numberOfAttendingPersons;
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -149,11 +186,29 @@ export const getShoppingListFromMeals = async ({
 
   return Promise.all(
     Object.keys(ingredientsQuantities).map(async (ingredientId) => {
-      const name =
-        ingredients[ingredientId].properties['Nom']?.title[0].plain_text ?? '';
-      const unit =
-        ingredients[ingredientId].properties['Unité']?.select.name ?? '';
-
+      let name = '';
+      let unit = '';
+      const ingredient = ingredients[ingredientId];
+      if (isFullPage(ingredient)) {
+        const ingredientNameProperty = ingredient.properties['Nom'];
+        if (
+          hasProperty(ingredientNameProperty, 'title') &&
+          Array.isArray(ingredientNameProperty.title) &&
+          typeof ingredientNameProperty.title[0]?.plain_text === 'string'
+        ) {
+          name = ingredientNameProperty.title[0]?.plain_text ?? '';
+        }
+        const ingredientUnitProperty = ingredient.properties['Unité'];
+        if (hasProperty(ingredientUnitProperty, 'select')) {
+          const ingredientUnitPropertySelect = ingredientUnitProperty.select;
+          if (
+            hasProperty(ingredientUnitPropertySelect, 'name') &&
+            typeof ingredientUnitPropertySelect.name === 'string'
+          ) {
+            unit = ingredientUnitPropertySelect.name ?? '';
+          }
+        }
+      }
       return {
         id: ingredientId,
         name,
