@@ -73,7 +73,7 @@ function Home() {
         <div className={styles.content}>
           <div className={styles.datePickers}>
             <div className={styles.datePicker}>
-              <Box sx={{ mx: 2 }}> du </Box>
+              <Box sx={{ mr: 2 }}> du </Box>
 
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker

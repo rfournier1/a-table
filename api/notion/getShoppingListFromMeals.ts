@@ -23,6 +23,8 @@ export const getShoppingListFromMeals = async ({
   const ingredientsDatabaseId = process.env.NOTION_INGREDIENTS_DATABASE_ID;
   const reciepeIngredientsRelationDatabaseId =
     process.env.NOTION_RECIEPE_INGREDIENTS_RELATION_DATABASE_ID;
+  const additionnalIngredientsDatabaseId =
+    process.env.NOTION_ADDITIONNAL_INGREDIENTS_DATABASE_ID;
   if (mealDatabaseId === undefined) {
     throw new Error('NOTION_MEAL_DATABASE_ID is not defined');
   }
@@ -37,27 +39,32 @@ export const getShoppingListFromMeals = async ({
       'NOTION_RECIEPE_INGREDIENTS_RELATION_DATABASE_ID is not defined'
     );
   }
+  if (additionnalIngredientsDatabaseId === undefined) {
+    throw new Error(
+      'NOTION_ADDITIONNAL_INGREDIENTS_DATABASE_ID is not defined'
+    );
+  }
 
-  //TO DO: handle pagination as max limit per page is 100
-  const meals = await notionv1Client.databases.query({
-    database_id: mealDatabaseId,
-    filter: {
-      and: [
-        {
-          date: {
-            on_or_before: lastDate.toISOString(),
+  const meals = //TO DO: handle pagination as max limit per page is 100
+    await notionv1Client.databases.query({
+      database_id: mealDatabaseId,
+      filter: {
+        and: [
+          {
+            date: {
+              on_or_before: lastDate.toISOString(),
+            },
+            property: 'Date',
           },
-          property: 'Date',
-        },
-        {
-          date: {
-            on_or_after: firstDate.toISOString(),
+          {
+            date: {
+              on_or_after: firstDate.toISOString(),
+            },
+            property: 'Date',
           },
-          property: 'Date',
-        },
-      ],
-    },
-  });
+        ],
+      },
+    });
 
   const reciepes: Record<string, GetPageResponse> = Object.assign(
     {},
@@ -87,6 +94,13 @@ export const getShoppingListFromMeals = async ({
         database_id: ingredientsDatabaseId,
       })
     ).map((ingredient) => ({ [ingredient.id]: ingredient }))
+  );
+
+  const additonnalIngredients = await queryAllPaginatedAPI(
+    notionv1Client.databases.query,
+    {
+      database_id: additionnalIngredientsDatabaseId,
+    }
   );
 
   //TO DO: exctract each relation logic into separate functions
@@ -184,6 +198,37 @@ export const getShoppingListFromMeals = async ({
     }
   }
 
+  //add additionnal ingredients
+  for (let additionnalIngredient of additonnalIngredients) {
+    console.log(additionnalIngredient);
+    if (isFullPage(additionnalIngredient)) {
+      const additionnalIngredientQuantityProperty =
+        additionnalIngredient.properties['Quantité'];
+      if (
+        hasProperty(additionnalIngredientQuantityProperty, 'number') &&
+        typeof additionnalIngredientQuantityProperty.number === 'number'
+      ) {
+        const additionnalIngredientIngrediantProperty =
+          additionnalIngredient.properties['Article'];
+        if (
+          hasProperty(additionnalIngredientIngrediantProperty, 'relation') &&
+          Array.isArray(additionnalIngredientIngrediantProperty.relation)
+        ) {
+          const ingredientId =
+            additionnalIngredientIngrediantProperty.relation[0]?.id;
+          if (ingredientId) {
+            if (ingredientsQuantities[ingredientId] === undefined) {
+              ingredientsQuantities[ingredientId] =
+                additionnalIngredientQuantityProperty.number;
+            } else {
+              ingredientsQuantities[ingredientId] +=
+                additionnalIngredientQuantityProperty.number;
+            }
+          }
+        }
+      }
+    }
+  }
   return Promise.all(
     Object.keys(ingredientsQuantities).map(async (ingredientId) => {
       let name = '';
