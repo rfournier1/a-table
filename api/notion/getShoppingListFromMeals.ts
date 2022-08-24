@@ -153,7 +153,7 @@ export const getShoppingListFromMeals = async ({
                     isFullPage(mealReciepeIngredient)
                   ) {
                     const mealReciepeIngredientQuantityProperty =
-                      mealReciepeIngredient.properties['Quantité'];
+                      mealReciepeIngredient.properties['Quantité/pers'];
                     if (
                       hasProperty(
                         mealReciepeIngredientQuantityProperty,
