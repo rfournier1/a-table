@@ -133,7 +133,9 @@ function Home() {
                           {shoppingListItem.name}
                         </TableCell>
                         <TableCell align="right">
-                          {shoppingListItem.quantity}
+                          {(
+                            Number(shoppingListItem.quantity.toPrecision(2)) / 1
+                          ).toString()}
                         </TableCell>
                         <TableCell align="right">
                           {shoppingListItem.unit}
