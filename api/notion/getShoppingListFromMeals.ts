@@ -200,7 +200,6 @@ export const getShoppingListFromMeals = async ({
 
   //add additionnal ingredients
   for (let additionnalIngredient of additonnalIngredients) {
-    console.log(additionnalIngredient);
     if (isFullPage(additionnalIngredient)) {
       const additionnalIngredientQuantityProperty =
         additionnalIngredient.properties['Quantité'];
