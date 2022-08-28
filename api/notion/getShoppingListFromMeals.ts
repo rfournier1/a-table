@@ -113,7 +113,14 @@ export const getShoppingListFromMeals = async ({
         Array.isArray(attendingPeopleProperty.people) &&
         attendingPeopleProperty.people.length > 0
       ) {
-        const numberOfAttendingPersons = attendingPeopleProperty.people.length;
+        let numberOfAttendingPersons = attendingPeopleProperty.people.length;
+        const guestsNumber = meal.properties['Invités'];
+        if (
+          hasProperty(guestsNumber, 'number') &&
+          typeof guestsNumber.number === 'number'
+        ) {
+          numberOfAttendingPersons += guestsNumber.number;
+        }
 
         const mealReciepesRelationsProperty = meal.properties['Plat'];
         if (
@@ -232,6 +239,8 @@ export const getShoppingListFromMeals = async ({
     Object.keys(ingredientsQuantities).map(async (ingredientId) => {
       let name = '';
       let unit = '';
+      let area = '';
+      let checked = false;
       const ingredient = ingredients[ingredientId];
       if (isFullPage(ingredient)) {
         const ingredientNameProperty = ingredient.properties['Nom'];
@@ -252,12 +261,32 @@ export const getShoppingListFromMeals = async ({
             unit = ingredientUnitPropertySelect.name ?? '';
           }
         }
+        const ingredientAreaProperty = ingredient.properties['Rayon'];
+        if (hasProperty(ingredientAreaProperty, 'select')) {
+          const ingredientAreaPropertySelect = ingredientAreaProperty.select;
+          if (
+            hasProperty(ingredientAreaPropertySelect, 'name') &&
+            typeof ingredientAreaPropertySelect.name === 'string'
+          ) {
+            area = ingredientAreaPropertySelect.name ?? '';
+          }
+        }
+        const ingredientCheckedProperty = ingredient.properties['OK'];
+        if (
+          hasProperty(ingredientCheckedProperty, 'checkbox') &&
+          typeof ingredientCheckedProperty.checkbox === 'boolean'
+        ) {
+          checked = ingredientCheckedProperty.checkbox;
+        }
       }
       return {
         id: ingredientId,
         name,
         quantity: ingredientsQuantities[ingredientId],
         unit,
+        area,
+        checked,
+        checkedLoading: false,
       };
     })
   );
