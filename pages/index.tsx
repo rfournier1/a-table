@@ -181,7 +181,7 @@ function Home() {
         <div className={styles.content}>
           <div className={styles.datePickers}>
             <div className={styles.datePicker}>
-              <Box sx={{ mr: 2 }}> du </Box>
+              <Box> du </Box>
 
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
@@ -194,7 +194,7 @@ function Home() {
               </LocalizationProvider>
             </div>
             <div className={styles.datePicker}>
-              <Box sx={{ mx: 2 }}> au </Box>
+              <Box> au </Box>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   value={lastDate}
@@ -222,15 +222,6 @@ function Home() {
                     <TableRow>
                       <TableCell align="left">
                         <TableSortLabel
-                          active={sort.criteria === 'area'}
-                          direction={sort.direction}
-                          onClick={() => handleSortClick('area')}
-                        >
-                          Rayon
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell align="right">
-                        <TableSortLabel
                           active={sort.criteria === 'name'}
                           direction={sort.direction}
                           onClick={() => handleSortClick('name')}
@@ -238,7 +229,16 @@ function Home() {
                           Ingredient
                         </TableSortLabel>
                       </TableCell>
-                      <TableCell align="left">
+                      <TableCell align="right">
+                        <TableSortLabel
+                          active={sort.criteria === 'area'}
+                          direction={sort.direction}
+                          onClick={() => handleSortClick('area')}
+                        >
+                          Rayon
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="center">
                         <TableSortLabel
                           active={sort.criteria === 'checked'}
                           direction={sort.direction}
@@ -251,40 +251,67 @@ function Home() {
                   </TableHead>
                   <TableBody>
                     {sortList(shoppingList).map((shoppingListItem, index) => (
-                      <TableRow
-                        key={shoppingListItem.id}
-                        sx={{
-                          '&:last-child td, &:last-child th': { border: 0 },
-                          background:
-                            index % 2 === 1
-                              ? 'transparent'
-                              : `${styleVariables.secondaryLight}4c`,
-                        }}
-                      >
-                        <TableCell align="left">
-                          {shoppingListItem.area}
-                        </TableCell>
-                        <TableCell align="right" component="th" scope="row">
-                          {`${shoppingListItem.name} ${(
-                            Number(shoppingListItem.quantity.toPrecision(2)) / 1
-                          ).toString()} ${shoppingListItem.unit}`}
-                        </TableCell>
-                        <TableCell align="left">
-                          {shoppingListItem.checkedLoading ? (
-                            <CircularProgress />
-                          ) : (
-                            <Checkbox
-                              checked={shoppingListItem.checked}
-                              onClick={() =>
-                                handleCheckedClick(
-                                  shoppingListItem.id,
-                                  !shoppingListItem.checked
-                                )
-                              }
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
+                      <>
+                        {/*sort.criteria === 'area' &&
+                          (index === 0 ||
+                            shoppingListItem.area !==
+                              shoppingList[index - 1].area) && (
+                            <TableRow
+                              key={shoppingListItem.area}
+                              className={styles.sortedHeader}
+                            >
+                              <TableCell>{shoppingListItem.area}</TableCell>
+                              <TableCell/>
+                              <TableCell/>
+                            </TableRow>
+                              )*/}
+                        <TableRow
+                          key={shoppingListItem.id}
+                          sx={{
+                            '&:last-child td, &:last-child th': { border: 0 },
+                            background:
+                              index % 2 === 1
+                                ? 'transparent'
+                                : `${styleVariables.secondaryLight}4c`,
+                            borderTop:
+                              (sort.criteria === 'area' &&
+                                index > 0 &&
+                                shoppingListItem.area !==
+                                  shoppingList[index - 1].area) ||
+                              (sort.criteria === 'checked' &&
+                                index > 0 &&
+                                shoppingListItem.checked !==
+                                  shoppingList[index - 1].checked)
+                                ? `solid 2px ${styleVariables.secondary}`
+                                : '',
+                          }}
+                        >
+                          <TableCell align="left" component="th" scope="row">
+                            {`${shoppingListItem.name} ${(
+                              Number(shoppingListItem.quantity.toPrecision(2)) /
+                              1
+                            ).toString()} ${shoppingListItem.unit}`}
+                          </TableCell>
+                          <TableCell align="right">
+                            {shoppingListItem.area}
+                          </TableCell>
+                          <TableCell align="left">
+                            {shoppingListItem.checkedLoading ? (
+                              <CircularProgress />
+                            ) : (
+                              <Checkbox
+                                checked={shoppingListItem.checked}
+                                onClick={() =>
+                                  handleCheckedClick(
+                                    shoppingListItem.id,
+                                    !shoppingListItem.checked
+                                  )
+                                }
+                              />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </>
                     ))}
                   </TableBody>
                 </Table>
