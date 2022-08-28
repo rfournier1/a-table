@@ -2,6 +2,7 @@ import Head from 'next/head';
 import styles from '../styles/Home.module.css';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  Button,
   Checkbox,
   CircularProgress,
   Paper,
@@ -31,13 +32,14 @@ type Sort = {
 function Home() {
   const [shoppingList, setShoppingList] = useState<ShoppingList>([]);
   const [loading, setLoading] = useState(true);
-  const [firstDate, setFirstDate] = useState<Date | null>();
-  const [lastDate, setLastDate] = useState<Date | null>();
+  const [firstDate, setFirstDate] = useState<Date | null>(null);
+  const [lastDate, setLastDate] = useState<Date | null>(null);
   const [error, setError] = useState(false);
   const [sort, setSort] = useState<Sort>({
     criteria: 'area',
     direction: 'desc',
   });
+  const [forceUpdate, setForceUpdate] = useState(false); //invert it to force list fetching
 
   dayjs.locale('fr');
 
@@ -110,6 +112,28 @@ function Home() {
     [sort]
   );
 
+  const uncheckAll = useCallback(async () => {
+    if (!loading) {
+      const ids = shoppingList
+        .filter((item) => item.checked)
+        .map((item) => item.id);
+      if (ids.length > 0) {
+        try {
+          const response = await fetch(
+            `/api/uncheckAll?ids=${JSON.stringify(ids)}`
+          );
+          if (response.ok) {
+            setForceUpdate((old) => !old);
+          } else {
+            throw new Error(await response.json());
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+  }, [shoppingList, loading]);
+
   useEffect(() => {
     let lastMonday = new Date();
     lastMonday.setDate(lastMonday.getDate() - (lastMonday.getDay() % 7) + 1);
@@ -118,6 +142,7 @@ function Home() {
     setFirstDate(lastMonday);
     setLastDate(nextMonday);
   }, []);
+
   useEffect(() => {
     if (!firstDate || !lastDate) {
       return;
@@ -138,7 +163,8 @@ function Home() {
         setLoading(false);
         setError(true);
       });
-  }, [firstDate, lastDate]);
+  }, [firstDate, lastDate, forceUpdate]);
+
   return (
     <div className={styles.container}>
       <Head>
@@ -265,6 +291,13 @@ function Home() {
               </TableContainer>
             )}
           </div>
+          <Button
+            className={styles.uncheckAllButton}
+            variant="contained"
+            onClick={uncheckAll}
+          >
+            Uncheck all
+          </Button>
         </div>
       </main>
     </div>

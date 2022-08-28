@@ -2,6 +2,7 @@ import { Client } from '@notionhq/client';
 
 const notionv1Client = new Client({
   auth: process.env.NOTION_ITEGRATION_TOKEN,
+  notionVersion: '2022-02-22',
 });
 
 type mutateIngredientCheckedPropertyProperties = {
