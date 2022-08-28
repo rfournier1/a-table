@@ -296,7 +296,7 @@ function Home() {
             variant="contained"
             onClick={uncheckAll}
           >
-            Uncheck all
+            Tout décocher
           </Button>
         </div>
       </main>
