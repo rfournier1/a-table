@@ -4,7 +4,6 @@ import { createTheme, ThemeProvider } from '@mui/material';
 import styleVariables from '../styles/variables.module.css';
 
 function MyApp({ Component, pageProps }: AppProps) {
-  console.log(styleVariables);
   const theme = createTheme({
     palette: {
       primary: {

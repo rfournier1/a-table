@@ -17,9 +17,13 @@ export default async function handler(
     res.status(400).send('Invalid date in URL');
     return;
   }
-  const mealsShoppingList = await getShoppingListFromMeals({
-    firstDate: new Date(firstDate),
-    lastDate: new Date(lastDate),
-  });
-  res.status(200).json(mealsShoppingList);
+  try {
+    const mealsShoppingList = await getShoppingListFromMeals({
+      firstDate: new Date(firstDate),
+      lastDate: new Date(lastDate),
+    });
+    res.status(200).json(mealsShoppingList);
+  } catch (error) {
+    res.status(500).send('Oops');
+  }
 }
