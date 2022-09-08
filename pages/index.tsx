@@ -22,7 +22,6 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fr';
 import dayjs from 'dayjs';
 import styleVariables from '../styles/variables.module.css';
-import { mutateIngredientCheckedProperty } from '../api/notion/mutateIngredientCheckedProperty';
 
 type Sort = {
   criteria: 'name' | 'area' | 'checked';
@@ -252,19 +251,6 @@ function Home() {
                   <TableBody>
                     {sortList(shoppingList).map((shoppingListItem, index) => (
                       <>
-                        {/*sort.criteria === 'area' &&
-                          (index === 0 ||
-                            shoppingListItem.area !==
-                              shoppingList[index - 1].area) && (
-                            <TableRow
-                              key={shoppingListItem.area}
-                              className={styles.sortedHeader}
-                            >
-                              <TableCell>{shoppingListItem.area}</TableCell>
-                              <TableCell/>
-                              <TableCell/>
-                            </TableRow>
-                              )*/}
                         <TableRow
                           key={shoppingListItem.id}
                           sx={{
