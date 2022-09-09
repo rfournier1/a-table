@@ -51,7 +51,7 @@ export const isNumberPropertyItemObjectResponse = (
 };
 
 export const isTitlePropertyItemObjectResponse = (
-  response: GetPagePropertyResponse
+  response: unknown
 ): response is TitlePropertyItemObjectResponse => {
   return hasProperty(response, 'type') && response.type === 'title';
 };
