@@ -1,0 +1,72 @@
+
+.main {
+  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.datePickers {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+
+}
+.datePicker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+
+.title{
+  width: 100%;
+  padding: 20px;
+  background-color: var(--color-primary);
+  line-height: 1.15;
+  font-size: 3rem;
+  margin-top: 0px;
+  margin-bottom: 40px; 
+   text-align: center;
+
+}
+
+.mealTitle{
+  color: var(--color-primary-dark);
+}
+
+.dishTitle{
+  color: var(--color-secondary-dark);
+}
+
+.content{
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.list {
+  text-align: center;
+  line-height: 1.5;
+  font-size: 1.5rem;
+  margin-top: 60px;
+  @media(max-width: 768px){
+    font-size: 1rem;
+  }
+}
+.ingredients{
+  text-align: left;
+}
+.sortedHeader{
+  background-color: var(--color-secondary);
+}
+.uncheckAllButton{
+  margin-top: 20px;
+}
+
+
+
+
