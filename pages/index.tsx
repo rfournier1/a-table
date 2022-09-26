@@ -134,11 +134,11 @@ function Home() {
   }, [shoppingList, loading]);
 
   useEffect(() => {
-    let lastMonday = new Date();
-    lastMonday.setDate(lastMonday.getDate() - (lastMonday.getDay() % 7) + 1);
+    let lastTuesday = new Date();
+    lastTuesday.setDate(lastTuesday.getDate() - (lastTuesday.getDay() % 7) + 2);
     let nextMonday = new Date();
-    nextMonday.setDate(lastMonday.getDate() + 6);
-    setFirstDate(lastMonday);
+    nextMonday.setDate(lastTuesday.getDate() + 6);
+    setFirstDate(lastTuesday);
     setLastDate(nextMonday);
   }, []);
 
