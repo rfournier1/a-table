@@ -1,0 +1,5 @@
+.navbar{
+    background-color: var(--color-primary);
+    position: sticky;
+    padding: 20px;
+}
