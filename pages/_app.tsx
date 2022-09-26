@@ -20,9 +20,6 @@ function MyApp({ Component, pageProps }: AppProps) {
       info: {
         main: styleVariables.primaryDark,
       },
-      white: {
-        main: '#FFFFFF',
-      },
     },
   });
   return (
