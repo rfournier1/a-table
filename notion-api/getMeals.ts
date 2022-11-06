@@ -1,5 +1,5 @@
-import queryAllPaginatedAPI from '../../helpers/queryAllPaginatedAPI';
-import { useMealsProperties } from '../../types';
+import queryAllPaginatedAPI from '../helpers/queryAllPaginatedAPI';
+import { useMealsProperties } from '../types';
 import { getClient } from './getClient';
 
 const client = getClient();

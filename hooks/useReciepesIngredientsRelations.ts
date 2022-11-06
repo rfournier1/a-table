@@ -1,8 +1,11 @@
 import useSWR from 'swr';
-import { fetcher } from '../../helpers/fetcher';
+import { fetcher } from '../helpers/fetcher';
 
 export const useReciepeIngredientsRelations = () => {
-  const { data, error } = useSWR('/api/reciepeIngredientsRelations', fetcher);
+  const { data, error } = useSWR(
+    '/api/data/reciepeIngredientsRelations',
+    fetcher
+  );
   return {
     reciepeIngredientsRelations: data?.reciepeIngredientsRelations,
     isLoading: !error && !data,

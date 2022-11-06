@@ -1,5 +1,5 @@
 import { GetPageResponse } from '@notionhq/client/build/src/api-endpoints';
-import queryAllPaginatedAPI from '../../helpers/queryAllPaginatedAPI';
+import queryAllPaginatedAPI from '../helpers/queryAllPaginatedAPI';
 import { getClient } from './getClient';
 
 const client = getClient();

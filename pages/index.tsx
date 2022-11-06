@@ -23,10 +23,10 @@ import 'dayjs/locale/fr';
 import dayjs from 'dayjs';
 import styleVariables from '../styles/variables.module.css';
 import { getInitDates } from '../helpers/getInitDates';
-import { useMeals } from '../api/hooks/useMeals';
-import { useReciepes } from '../api/hooks/useReciepes';
-import { useReciepeIngredientsRelations } from '../api/hooks/useReciepesIngredientsRelations';
-import { useIngredients } from '../api/hooks/useIngredients';
+import { useMeals } from '../hooks/useMeals';
+import { useReciepes } from '../hooks/useReciepes';
+import { useReciepeIngredientsRelations } from '../hooks/useReciepesIngredientsRelations';
+import { useIngredients } from '../hooks/useIngredients';
 import { getShoppingListFromMeals } from '../helpers/getShoppingListFromMeals';
 
 type Sort = {
@@ -34,23 +34,9 @@ type Sort = {
   direction: 'asc' | 'desc';
 };
 
-export function getStaticProps() {
+function Home() {
   const { firstDate: initFirstDate, lastDate: initLastDate } = getInitDates();
-  return {
-    props: {
-      initFirstDate: initFirstDate.toISOString(),
-      initLastDate: initLastDate.toISOString(),
-    },
-  };
-}
 
-function Home({
-  initFirstDate,
-  initLastDate,
-}: {
-  initFirstDate: Date;
-  initLastDate: Date;
-}) {
   const [shoppingList, setShoppingList] = useState<ShoppingList>([]);
   const [firstDate, setFirstDate] = useState(new Date(initFirstDate));
   const [lastDate, setLastDate] = useState(new Date(initLastDate));
