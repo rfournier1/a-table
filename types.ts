@@ -9,3 +9,8 @@ export type ShoppingListItem = {
 };
 
 export type ShoppingList = ShoppingListItem[];
+
+export type useMealsProperties = {
+  firstDate: Date;
+  lastDate: Date;
+};
