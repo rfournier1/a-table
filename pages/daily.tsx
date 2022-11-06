@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fr';
 import dayjs from 'dayjs';
-import { DailyMeal } from '../api/notion/getDailyMealsInformation';
+import { DailyMeal } from '../notion-api/getDailyMealsInformation';
 
 function Home() {
   const [meals, setMeals] = useState<DailyMeal[]>([]);
@@ -21,7 +21,7 @@ function Home() {
   useEffect(() => {
     setLoading(true);
     setError(false);
-    fetch(`/api/daily?date=${date.toISOString().split('T')[0]}`)
+    fetch(`/api/data/daily?date=${date.toISOString().split('T')[0]}`)
       .then((res) => res.json())
       .then((data: DailyMeal[]) => {
         setMeals(data);

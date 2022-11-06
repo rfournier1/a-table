@@ -1,6 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { mutateIngredientCheckedProperty } from '../../api/notion/mutateIngredientCheckedProperty';
+import { mutateIngredientCheckedProperty } from '../../notion-api/mutateIngredientCheckedProperty';
 
 export default async function handler(
   req: NextApiRequest,

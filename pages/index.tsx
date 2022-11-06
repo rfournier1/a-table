@@ -17,11 +17,17 @@ import {
 import TextField from '@mui/material/TextField';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import Box from '@mui/material/Box';
-import { ShoppingList, ShoppingListItem } from '../types';
+import { ShoppingList, ShoppingListItem, useMealsProperties } from '../types';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fr';
 import dayjs from 'dayjs';
 import styleVariables from '../styles/variables.module.css';
+import { getInitDates } from '../helpers/getInitDates';
+import { useMeals } from '../hooks/useMeals';
+import { useReciepes } from '../hooks/useReciepes';
+import { useReciepeIngredientsRelations } from '../hooks/useReciepesIngredientsRelations';
+import { useIngredients } from '../hooks/useIngredients';
+import { getShoppingListFromMeals } from '../helpers/getShoppingListFromMeals';
 
 type Sort = {
   criteria: 'name' | 'area' | 'checked';
@@ -29,17 +35,39 @@ type Sort = {
 };
 
 function Home() {
+  const { firstDate: initFirstDate, lastDate: initLastDate } = getInitDates();
+
   const [shoppingList, setShoppingList] = useState<ShoppingList>([]);
-  const [loading, setLoading] = useState(true);
-  const [firstDate, setFirstDate] = useState<Date | null>(null);
-  const [lastDate, setLastDate] = useState<Date | null>(null);
+  const [firstDate, setFirstDate] = useState(new Date(initFirstDate));
+  const [lastDate, setLastDate] = useState(new Date(initLastDate));
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [sort, setSort] = useState<Sort>({
     criteria: 'area',
     direction: 'desc',
   });
-  const [forceUpdate, setForceUpdate] = useState(false); //invert it to force list fetching
-
+  const {
+    meals,
+    additonnalIngredients,
+    isLoading: isMealsLoading,
+    isError: isMealsError,
+  } = useMeals({ firstDate, lastDate });
+  const {
+    reciepes,
+    isLoading: isReciepesLoading,
+    isError: isReciepesError,
+  } = useReciepes();
+  const {
+    reciepeIngredientsRelations,
+    isLoading: isReciepeIngredientsRelationsLoading,
+    isError: isReciepeIngredientsRelationsError,
+  } = useReciepeIngredientsRelations();
+  const {
+    ingredients,
+    isLoading: isIngredientsLoading,
+    isError: isIngredientsError,
+    refresh: refreshIngredients,
+  } = useIngredients();
   dayjs.locale('fr');
 
   const handleSortClick = useCallback(
@@ -122,7 +150,7 @@ function Home() {
             `/api/uncheckAll?ids=${JSON.stringify(ids)}`
           );
           if (response.ok) {
-            setForceUpdate((old) => !old);
+            refreshIngredients();
           } else {
             throw new Error(await response.json());
           }
@@ -131,39 +159,65 @@ function Home() {
         }
       }
     }
-  }, [shoppingList, loading]);
+  }, [shoppingList, loading, refreshIngredients]);
 
   useEffect(() => {
-    let lastTuesday = new Date();
-    lastTuesday.setDate(lastTuesday.getDate() - (lastTuesday.getDay() % 7) + 2);
-    let nextMonday = new Date();
-    nextMonday.setDate(lastTuesday.getDate() + 6);
-    setFirstDate(lastTuesday);
-    setLastDate(nextMonday);
-  }, []);
-
-  useEffect(() => {
-    if (!firstDate || !lastDate) {
-      return;
+    if (
+      meals &&
+      reciepes &&
+      ingredients &&
+      additonnalIngredients &&
+      reciepeIngredientsRelations
+    ) {
+      setShoppingList(
+        getShoppingListFromMeals({
+          meals,
+          reciepes,
+          ingredients,
+          additonnalIngredients,
+          reciepeIngredientsRelations,
+        })
+      );
     }
-    setLoading(true);
-    setError(false);
-    fetch(
-      `/api/list?firstDate=${firstDate.toISOString().split('T')[0]}&lastDate=${
-        lastDate.toISOString().split('T')[0]
-      }`
-    )
-      .then((res) => res.json())
-      .then((data: ShoppingList) => {
-        setShoppingList(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-        setError(true);
-      });
-  }, [firstDate, lastDate, forceUpdate]);
+  }, [
+    meals,
+    reciepes,
+    ingredients,
+    additonnalIngredients,
+    reciepeIngredientsRelations,
+  ]);
 
+  useEffect(() => {
+    setLoading(
+      isIngredientsLoading ||
+        isReciepesLoading ||
+        isMealsLoading ||
+        isReciepeIngredientsRelationsLoading
+    );
+  }, [
+    isIngredientsLoading,
+    isMealsLoading,
+    isReciepeIngredientsRelationsLoading,
+    isReciepesLoading,
+  ]);
+
+  useEffect(() => {
+    console.log('isIngredientsLoading', isIngredientsLoading);
+  }, [isIngredientsLoading]);
+
+  useEffect(() => {
+    setError(
+      isIngredientsError ||
+        isMealsError ||
+        isReciepesError ||
+        isReciepeIngredientsRelationsError
+    );
+  }, [
+    isIngredientsError,
+    isMealsError,
+    isReciepeIngredientsRelationsError,
+    isReciepesError,
+  ]);
   return (
     <div className={styles.container}>
       <Head>
@@ -186,7 +240,7 @@ function Home() {
                 <DatePicker
                   value={firstDate}
                   onChange={(newValue) => {
-                    setFirstDate(newValue);
+                    setFirstDate(newValue ?? initFirstDate);
                   }}
                   renderInput={(params) => <TextField {...params} />}
                 />
@@ -198,7 +252,7 @@ function Home() {
                 <DatePicker
                   value={lastDate}
                   onChange={(newValue) => {
-                    setLastDate(newValue);
+                    setLastDate(newValue ?? initLastDate);
                   }}
                   renderInput={(params) => <TextField {...params} />}
                 />
@@ -208,7 +262,28 @@ function Home() {
 
           <div className={styles.list}>
             {loading ? (
-              <CircularProgress />
+              <>
+                <div>
+                  Loading Ingredients ...
+                  {isIngredientsLoading ? <CircularProgress /> : <>✅</>}
+                </div>
+                <div>
+                  Loading Reciepes ...{' '}
+                  {isReciepesLoading ? <CircularProgress /> : <>✅</>}
+                </div>
+                <div>
+                  Loading Reciepes to ingredient relations ...{' '}
+                  {isReciepeIngredientsRelationsLoading ? (
+                    <CircularProgress />
+                  ) : (
+                    <>✅</>
+                  )}
+                </div>
+                <div>
+                  Loading meals ...{' '}
+                  {isMealsLoading ? <CircularProgress /> : <>✅</>}
+                </div>
+              </>
             ) : error ? (
               <div>
                 Something went wrong, your request is probably too heavy for the

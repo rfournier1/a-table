@@ -1,5 +1,5 @@
 import { Client, isFullPage } from '@notionhq/client';
-import { hasProperty } from '../../helpers/typeGuards';
+import { hasProperty } from '../helpers/typeGuards';
 
 //v1 of the api return the properties values in database query whereas v2 does not
 const notionv1Client = new Client({
