@@ -286,8 +286,11 @@ function Home() {
               </>
             ) : error ? (
               <div>
-                Something went wrong, your request is probably too heavy for the
-                server
+                <div>
+                  Something went wrong, your request is probably too heavy for
+                  the server
+                </div>
+                <div className={styles.error}>{JSON.stringify(error)}</div>
               </div>
             ) : (
               <TableContainer component={Paper}>
