@@ -54,7 +54,10 @@
 .uncheckAllButton{
   margin-top: 20px;
 }
-
+.error{
+  background-color: lightcoral;
+  padding: 10px;
+}
 
 
 
