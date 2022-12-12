@@ -1,64 +1,17 @@
 import { Client, isFullPage } from '@notionhq/client';
 import { hasProperty } from '../helpers/typeGuards';
+import { DailyMeal, Dish, useDailyMealsProperties } from '../types';
 
-//v1 of the api return the properties values in database query whereas v2 does not
-const notionv1Client = new Client({
-  auth: process.env.NOTION_ITEGRATION_TOKEN,
-  notionVersion: '2022-02-22',
-});
-
-interface GetDailyMealsInformationProps {
-  date: Date;
-}
-
-interface DishIngredient {
-  name: string;
-  quantity: number;
-  unit: string;
-}
-
-interface Dish {
-  title: string;
-  ingredients: DishIngredient[];
-}
-
-export interface DailyMeal {
-  dishes: Dish[];
-  numberOfAttendingPersons: number;
-  title: string;
-}
-
-export const getDailyMealsInformation = async ({
-  date,
-}: GetDailyMealsInformationProps): Promise<DailyMeal[]> => {
-  const mealDatabaseId = process.env.NOTION_MEAL_DATABASE_ID;
-  const reciepeDatabaseId = process.env.NOTION_RECIEPE_DATABASE_ID;
-  const ingredientsDatabaseId = process.env.NOTION_INGREDIENTS_DATABASE_ID;
-  const reciepeIngredientsRelationDatabaseId =
-    process.env.NOTION_RECIEPE_INGREDIENTS_RELATION_DATABASE_ID;
-  const additionnalIngredientsDatabaseId =
-    process.env.NOTION_ADDITIONNAL_INGREDIENTS_DATABASE_ID;
-  if (mealDatabaseId === undefined) {
-    throw new Error('NOTION_MEAL_DATABASE_ID is not defined');
-  }
-  if (reciepeDatabaseId === undefined) {
-    throw new Error('NOTION_RECIEPE_DATABASE_ID is not defined');
-  }
-  if (ingredientsDatabaseId === undefined) {
-    throw new Error('NOTION_INGREDIENTS_DATABASE_ID is not defined');
-  }
-  if (reciepeIngredientsRelationDatabaseId === undefined) {
-    throw new Error(
-      'NOTION_RECIEPE_INGREDIENTS_RELATION_DATABASE_ID is not defined'
-    );
-  }
-  if (additionnalIngredientsDatabaseId === undefined) {
-    throw new Error(
-      'NOTION_ADDITIONNAL_INGREDIENTS_DATABASE_ID is not defined'
-    );
-  }
-
-  const meals = await notionv1Client.databases.query({
+//
+export const getDailyMealsInformation = async (
+  {
+    date,
+    mealDatabaseId,
+    reciepeIngredientsRelationDatabaseId,
+  }: useDailyMealsProperties,
+  client: Client
+): Promise<DailyMeal[]> => {
+  const meals = await client.databases.query({
     database_id: mealDatabaseId,
     filter: {
       and: [
@@ -89,7 +42,7 @@ export const getDailyMealsInformation = async ({
     })
     .flat();
 
-  const reciepeIngredientsRelations = await notionv1Client.databases.query({
+  const reciepeIngredientsRelations = await client.databases.query({
     database_id: reciepeIngredientsRelationDatabaseId,
     filter: {
       or: reciepesId.map((id) => ({

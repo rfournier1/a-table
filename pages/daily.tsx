@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import styles from '../styles/Daily.module.css';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CircularProgress } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -8,38 +8,35 @@ import Box from '@mui/material/Box';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fr';
 import dayjs from 'dayjs';
-import { DailyMeal } from '../notion-api/getDailyMealsInformation';
-
+import { useDatabaseId } from '../hooks/useDatabaseId';
+import {
+  MEAL_DB_NAME,
+  RECIEPE_INGREDIENTS_RELATIONS_DB_NAME,
+} from '../notion-api/keys';
+import { useDailyMeals } from '../hooks/useDailyMeals';
 function Home() {
-  const [meals, setMeals] = useState<DailyMeal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [date, setDate] = useState<Date>(new Date());
-  const [error, setError] = useState(false);
 
   dayjs.locale('fr');
-
-  useEffect(() => {
-    setLoading(true);
-    setError(false);
-    fetch(`/api/data/daily?date=${date.toISOString().split('T')[0]}`)
-      .then((res) => res.json())
-      .then((data: DailyMeal[]) => {
-        setMeals(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-        setError(true);
-      });
-  }, [date]);
-
+  const { id: mealDatabaseId, isError: isMealDBError } = useDatabaseId({
+    name: MEAL_DB_NAME,
+  });
+  const {
+    id: reciepeIngredientsRelationDatabaseId,
+    isError: isReciepeIngredientsRelationDBError,
+  } = useDatabaseId({ name: RECIEPE_INGREDIENTS_RELATIONS_DB_NAME });
+  const { meals, isLoading, isError } = useDailyMeals({
+    date,
+    mealDatabaseId,
+    reciepeIngredientsRelationDatabaseId,
+  });
   return (
     <div className={styles.container}>
       <Head>
         <title>À table !</title>
         <meta
           name="description"
-          content="Generating a shopping from our collocation's notion"
+          content="Generating a shopping list from our collocation's notion"
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -64,16 +61,16 @@ function Home() {
           </div>
 
           <div className={styles.list}>
-            {loading ? (
+            {isLoading ? (
               <CircularProgress />
-            ) : error ? (
+            ) : isError ? (
               <div>
                 Something went wrong, your request is probably too heavy for the
                 server
               </div>
             ) : (
               <div>
-                {meals.map((meal, mealIndex) => (
+                {meals?.map((meal, mealIndex) => (
                   <div key={`meal-${mealIndex}`}>
                     <h2 className={styles.mealTitle}>
                       {meal.title} pour {meal.numberOfAttendingPersons} personne

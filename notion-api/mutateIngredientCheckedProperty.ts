@@ -1,19 +1,15 @@
 import { Client } from '@notionhq/client';
 
-const notionv1Client = new Client({
-  auth: process.env.NOTION_ITEGRATION_TOKEN,
-  notionVersion: '2022-02-22',
-});
-
 type mutateIngredientCheckedPropertyProperties = {
   id: string;
   checked: boolean;
 };
 export const mutateIngredientCheckedProperty = async (
-  ingredient: mutateIngredientCheckedPropertyProperties
+  ingredient: mutateIngredientCheckedPropertyProperties,
+  client: Client
 ) => {
   try {
-    await notionv1Client.pages.update({
+    await client.pages.update({
       page_id: ingredient.id,
       properties: {
         OK: {
@@ -23,7 +19,7 @@ export const mutateIngredientCheckedProperty = async (
     });
     return ingredient.checked;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return !ingredient.checked;
   }
 };

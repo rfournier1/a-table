@@ -2,4 +2,6 @@
     background-color: var(--color-primary);
     position: sticky;
     padding: 20px;
+    display: flex;
+    justify-content: space-between;
 }

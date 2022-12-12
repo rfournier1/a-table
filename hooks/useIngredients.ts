@@ -1,8 +1,19 @@
 import useSWR from 'swr';
 import { fetcher } from '../helpers/fetcher';
+import { swrOptions } from '../helpers/swrOptions';
+import { useIngredientsProperties } from '../types';
 
-export const useIngredients = () => {
-  const { data, error, mutate } = useSWR('/api/data/ingredients', fetcher);
+export const useIngredients = ({
+  ingredientsDatabaseId,
+}: useIngredientsProperties) => {
+  const { data, error, mutate } = useSWR(
+    () =>
+      !ingredientsDatabaseId
+        ? null
+        : `/api/data/ingredients?dbid=${ingredientsDatabaseId}`,
+    fetcher,
+    swrOptions
+  );
   return {
     ingredients: data?.ingredients,
     isLoading: !error && !data,

@@ -1,15 +1,12 @@
+import { Client } from '@notionhq/client';
 import { GetPageResponse } from '@notionhq/client/build/src/api-endpoints';
 import queryAllPaginatedAPI from '../helpers/queryAllPaginatedAPI';
-import { getClient } from './getClient';
+import { useIngredientsProperties } from '../types';
 
-const client = getClient();
-
-export const getIngredients = async () => {
-  const ingredientsDatabaseId = process.env.NOTION_INGREDIENTS_DATABASE_ID;
-  if (ingredientsDatabaseId === undefined) {
-    throw new Error('NOTION_INGREDIENTS_DATABASE_ID is not defined');
-  }
-
+export const getIngredients = async (
+  { ingredientsDatabaseId }: useIngredientsProperties,
+  client: Client
+) => {
   const ingredients: Record<string, GetPageResponse> = Object.assign(
     {},
     ...(

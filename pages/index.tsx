@@ -17,7 +17,7 @@ import {
 import TextField from '@mui/material/TextField';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import Box from '@mui/material/Box';
-import { ShoppingList, ShoppingListItem, useMealsProperties } from '../types';
+import { ShoppingList, ShoppingListItem } from '../types';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fr';
 import dayjs from 'dayjs';
@@ -28,7 +28,13 @@ import { useReciepes } from '../hooks/useReciepes';
 import { useReciepeIngredientsRelations } from '../hooks/useReciepesIngredientsRelations';
 import { useIngredients } from '../hooks/useIngredients';
 import { getShoppingListFromMeals } from '../helpers/getShoppingListFromMeals';
-
+import { useDatabaseId } from '../hooks/useDatabaseId';
+import {
+  INGREDIENT_DB_NAME,
+  MEAL_DB_NAME,
+  RECIEPE_DB_NAME,
+  RECIEPE_INGREDIENTS_RELATIONS_DB_NAME,
+} from '../notion-api/keys';
 type Sort = {
   criteria: 'name' | 'area' | 'checked';
   direction: 'asc' | 'desc';
@@ -46,28 +52,49 @@ function Home() {
     criteria: 'area',
     direction: 'desc',
   });
+  const { id: mealDatabaseId, isError: isMealDBError } = useDatabaseId({
+    name: MEAL_DB_NAME,
+  });
+  const {
+    id: additionalIngredientsDatabaseId,
+    isError: isAdditionalIngredientsDBError,
+  } = useDatabaseId({ name: 'Additional ingredients' });
+  const { id: reciepesDatabaseId, isError: isReciepesDBError } = useDatabaseId({
+    name: RECIEPE_DB_NAME,
+  });
+  const { id: ingredientsDatabaseId, isError: isIngredientsDBError } =
+    useDatabaseId({ name: INGREDIENT_DB_NAME });
+  const {
+    id: reciepeIngredientsRelationDatabaseId,
+    isError: isReciepeIngredientsRelationDBError,
+  } = useDatabaseId({ name: RECIEPE_INGREDIENTS_RELATIONS_DB_NAME });
   const {
     meals,
     additonnalIngredients,
     isLoading: isMealsLoading,
     isError: isMealsError,
-  } = useMeals({ firstDate, lastDate });
+  } = useMeals({
+    mealDatabaseId,
+    additionalIngredientsDatabaseId,
+    firstDate,
+    lastDate,
+  });
   const {
     reciepes,
     isLoading: isReciepesLoading,
     isError: isReciepesError,
-  } = useReciepes();
+  } = useReciepes({ reciepesDatabaseId });
   const {
     reciepeIngredientsRelations,
     isLoading: isReciepeIngredientsRelationsLoading,
     isError: isReciepeIngredientsRelationsError,
-  } = useReciepeIngredientsRelations();
+  } = useReciepeIngredientsRelations({ reciepeIngredientsRelationDatabaseId });
   const {
     ingredients,
     isLoading: isIngredientsLoading,
     isError: isIngredientsError,
     refresh: refreshIngredients,
-  } = useIngredients();
+  } = useIngredients({ ingredientsDatabaseId });
   dayjs.locale('fr');
 
   const handleSortClick = useCallback(
@@ -175,7 +202,10 @@ function Home() {
           reciepes,
           ingredients,
           additonnalIngredients,
-          reciepeIngredientsRelations,
+          reciepeIngredientsRelations: Object.assign(
+            {},
+            ...reciepeIngredientsRelations
+          ),
         })
       );
     }
@@ -202,10 +232,6 @@ function Home() {
   ]);
 
   useEffect(() => {
-    console.log('isIngredientsLoading', isIngredientsLoading);
-  }, [isIngredientsLoading]);
-
-  useEffect(() => {
     setError(
       isIngredientsError ||
         isMealsError ||
@@ -224,7 +250,7 @@ function Home() {
         <title>À table !</title>
         <meta
           name="description"
-          content="Generating a shopping from our collocation's notion"
+          content="Generating a shopping list from our collocation's notion"
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
