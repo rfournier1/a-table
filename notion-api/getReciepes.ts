@@ -6,8 +6,8 @@ import { useReciepesProperties } from '../types';
 export const getReciepes = async (
   { reciepesDatabaseId }: useReciepesProperties,
   client: Client
-) => {
-  const reciepes: Record<string, GetPageResponse> = Object.assign(
+): Promise<Record<string, GetPageResponse>> => {
+  return Object.assign(
     {},
     ...(
       await queryAllPaginatedAPI(client.databases.query, {
@@ -15,6 +15,4 @@ export const getReciepes = async (
       })
     ).map((reciepe) => ({ [reciepe.id]: reciepe }))
   );
-
-  return { reciepes };
 };

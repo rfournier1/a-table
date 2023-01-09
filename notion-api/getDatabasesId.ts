@@ -21,3 +21,22 @@ export const getDatabaseId = async (databaseName: string, client: Client) => {
 
   return databaseId;
 };
+
+export const getDatabaseIdWithName = async (
+  databaseName: string,
+  client: Client
+) => {
+  const id = await getDatabaseId(databaseName, client);
+  return { name: databaseName, id };
+};
+
+export const getDatabasesIds = async (
+  databasesNames: string[],
+  client: Client
+): Promise<Record<string, string>> => {
+  return (
+    await Promise.all(
+      databasesNames.map((dbName) => getDatabaseIdWithName(dbName, client))
+    )
+  ).reduce((acc, curr) => ({ ...acc, [curr.name]: curr.id }), {});
+};

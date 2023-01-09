@@ -1,29 +1,33 @@
-import { isFullPage } from '@notionhq/client';
+import { Client, isFullPage } from '@notionhq/client';
 import {
   GetPageResponse,
   QueryDatabaseResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import { ShoppingList, ShoppingListItem } from '../types';
+import { MealIngredients, ShoppingList, ShoppingListItem } from '../types';
 import { hasProperty } from './typeGuards';
 
-interface getShoppingListFromMealsProps {
+type GetMealsIngredientsProps = {
   meals: QueryDatabaseResponse;
   reciepes: Record<string, GetPageResponse>;
   ingredients: Record<string, GetPageResponse>;
   reciepeIngredientsRelations: Record<string, GetPageResponse>;
-  additonnalIngredients: GetPageResponse[];
-}
-export const getShoppingListFromMeals = ({
+};
+
+type GetShoppingListAndMealsIngredientsProps = GetMealsIngredientsProps & {
+  additonalIngredients: GetPageResponse[];
+};
+
+function getMealsIngredients({
   meals,
   reciepes,
   ingredients,
   reciepeIngredientsRelations,
-  additonnalIngredients,
-}: getShoppingListFromMealsProps): ShoppingList => {
-  //TO DO: exctract each relation logic into separate functions
-  const ingredientsQuantities: Record<string, number> = {};
+}: GetMealsIngredientsProps) {
+  const mealsIngredients: Record<string, MealIngredients> = {};
   for (let meal of meals.results) {
     if (isFullPage(meal)) {
+      const mealIngredients: MealIngredients = {};
+
       const attendingPeopleProperty = meal.properties['Qui est présent ?'];
       if (
         hasProperty(attendingPeopleProperty, 'people') &&
@@ -98,16 +102,46 @@ export const getShoppingListFromMeals = ({
                         const ingredientId =
                           ingredientRelationProperty.relation[0]?.id;
                         if (ingredientId) {
-                          if (
-                            ingredientsQuantities[ingredientId] === undefined
-                          ) {
-                            ingredientsQuantities[ingredientId] =
-                              mealReciepeIngredientQuantity *
-                              numberOfAttendingPersons;
-                          } else {
-                            ingredientsQuantities[ingredientId] +=
-                              mealReciepeIngredientQuantity *
-                              numberOfAttendingPersons;
+                          const ingredient = ingredients[ingredientId];
+                          if (isFullPage(ingredient)) {
+                            const ingredientNameProperty =
+                              ingredient.properties['Nom'];
+                            const ingredientUnitProperty =
+                              ingredient.properties['Unité'];
+                            let ingredientName = ingredientId;
+                            let ingredientUnit = '';
+                            if (hasProperty(ingredientUnitProperty, 'select')) {
+                              const ingredientUnitPropertySelect =
+                                ingredientUnitProperty.select;
+                              if (
+                                hasProperty(
+                                  ingredientUnitPropertySelect,
+                                  'name'
+                                ) &&
+                                typeof ingredientUnitPropertySelect.name ===
+                                  'string'
+                              ) {
+                                ingredientUnit =
+                                  ingredientUnitPropertySelect.name ?? '';
+                              }
+                            }
+                            if (
+                              hasProperty(ingredientNameProperty, 'title') &&
+                              Array.isArray(ingredientNameProperty.title) &&
+                              typeof ingredientNameProperty.title[0]
+                                ?.plain_text === 'string'
+                            ) {
+                              ingredientName =
+                                ingredientNameProperty.title[0]?.plain_text ??
+                                '';
+                            }
+                            mealIngredients[ingredientId] = {
+                              quantity:
+                                mealReciepeIngredientQuantity *
+                                numberOfAttendingPersons,
+                              unit: ingredientUnit,
+                              name: ingredientName,
+                            };
                           }
                         }
                       }
@@ -119,11 +153,45 @@ export const getShoppingListFromMeals = ({
           }
         }
       }
+
+      mealsIngredients[meal.id] = mealIngredients;
     }
   }
+  return mealsIngredients;
+}
+export const getShoppingListAndMealsIngredients = ({
+  meals,
+  reciepes,
+  ingredients,
+  reciepeIngredientsRelations,
+  additonalIngredients,
+}: GetShoppingListAndMealsIngredientsProps): {
+  shoppingList: ShoppingList;
+  mealsIngredients: Record<string, MealIngredients>;
+} => {
+  const ingredientsQuantities: Record<string, number> = {};
 
+  const mealsIngredients = getMealsIngredients({
+    meals,
+    reciepes,
+    ingredients,
+    reciepeIngredientsRelations,
+  });
+
+  //get all the meals ingredients with quantities
+  for (let mealIngredients of Object.values(mealsIngredients)) {
+    for (let ingredientId of Object.keys(mealIngredients)) {
+      if (ingredientsQuantities[ingredientId] === undefined) {
+        ingredientsQuantities[ingredientId] =
+          mealIngredients[ingredientId].quantity;
+      } else {
+        ingredientsQuantities[ingredientId] +=
+          mealIngredients[ingredientId].quantity;
+      }
+    }
+  }
   //add additionnal ingredients
-  for (let additionnalIngredient of additonnalIngredients) {
+  for (let additionnalIngredient of additonalIngredients) {
     if (isFullPage(additionnalIngredient)) {
       const additionnalIngredientQuantityProperty =
         additionnalIngredient.properties['Quantité'];
@@ -152,7 +220,7 @@ export const getShoppingListFromMeals = ({
       }
     }
   }
-  return Object.keys(ingredientsQuantities).map(
+  const shoppingList = Object.keys(ingredientsQuantities).map(
     (ingredientId): ShoppingListItem => {
       let name = '';
       let unit = '';
@@ -207,4 +275,5 @@ export const getShoppingListFromMeals = ({
       };
     }
   );
+  return { shoppingList, mealsIngredients };
 };
