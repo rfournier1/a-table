@@ -31,8 +31,7 @@ function getMealsIngredients({
       const attendingPeopleProperty = meal.properties['Qui est présent ?'];
       if (
         hasProperty(attendingPeopleProperty, 'people') &&
-        Array.isArray(attendingPeopleProperty.people) &&
-        attendingPeopleProperty.people.length > 0
+        Array.isArray(attendingPeopleProperty.people)
       ) {
         let numberOfAttendingPersons = attendingPeopleProperty.people.length;
         const guestsNumber = meal.properties['Invités'];
