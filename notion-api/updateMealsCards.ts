@@ -15,16 +15,14 @@ async function updateMealCard(
   const mealsBlocks = await client.blocks.children.list({
     block_id: mealId,
   });
-  //clear the card
-  await Promise.all(
-    mealsBlocks.results.map((mealBlock) =>
-      client.blocks.delete({
-        block_id: mealBlock.id,
-      })
-    )
-  );
+  //clear the card (can't be parallel :/)
+  for (const mealBlock of mealsBlocks.results) {
+    await client.blocks.delete({
+      block_id: mealBlock.id,
+    });
+  }
   //then push the list
-  client.blocks.children.append({
+  await client.blocks.children.append({
     block_id: mealId,
     children: Object.values(ingredients).map((ingredient) => ({
       paragraph: {
