@@ -2,7 +2,6 @@ import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import { createTheme, ThemeProvider } from '@mui/material';
 import styleVariables from '../styles/variables.module.css';
-import Navbar from '../components/Navbar';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const theme = createTheme({
@@ -24,7 +23,6 @@ function MyApp({ Component, pageProps }: AppProps) {
   });
   return (
     <ThemeProvider theme={theme}>
-      <Navbar />
       <Component {...pageProps} />
     </ThemeProvider>
   );

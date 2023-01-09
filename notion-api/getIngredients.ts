@@ -6,8 +6,8 @@ import { useIngredientsProperties } from '../types';
 export const getIngredients = async (
   { ingredientsDatabaseId }: useIngredientsProperties,
   client: Client
-) => {
-  const ingredients: Record<string, GetPageResponse> = Object.assign(
+): Promise<Record<string, GetPageResponse>> => {
+  return Object.assign(
     {},
     ...(
       await queryAllPaginatedAPI(client.databases.query, {
@@ -15,6 +15,4 @@ export const getIngredients = async (
       })
     ).map((ingredient) => ({ [ingredient.id]: ingredient }))
   );
-
-  return { ingredients };
 };
