@@ -9,7 +9,7 @@ export default async function queryAllPaginatedAPI(
   args: QueryDatabaseParameters
 ): Promise<GetPageResponse[]> {
   const results: GetPageResponse[] = [];
-  let currentPage = await listFn(args);
+  let currentPage = await listFn({ ...args, page_size: 20 });
   results.push(...currentPage.results);
   while (currentPage.next_cursor !== null) {
     args.start_cursor = currentPage.next_cursor;
